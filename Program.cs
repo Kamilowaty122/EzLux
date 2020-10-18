@@ -20,7 +20,7 @@
   public class Program {
     private static Menu MainMenu;
     private static Spell Q,W,E,R,QTrue;
-    private static GameObject _eGameObject;
+
     public static Menu drawingMenu, comboMenu, miscMenu, clearMenu, harassMenu;
 
     private static void Main(string[] args) {
@@ -114,12 +114,7 @@
       // cast e (is selfcast spell)
       // if menuitem enabled + E ready
       if (MainMenu["Combo"]["comboE"].GetValue < MenuBool > ().Enabled && E.IsReady()) {
-        
-        
-        if (_eGameObject != null && E.IsReady()) //pop e
-            {
-              E.Cast();
-            }
+
 
         
         
@@ -195,11 +190,6 @@
       if(MainMenu["Clear"]["EMinion"].GetValue < MenuBool > ().Enabled)
       {
         var minions = GameObjects.EnemyMinions.Where(x => x.IsValidTarget(E.Range) && x.IsMinion()).Cast<AIBaseClient>().ToList();
-
-        if (_eGameObject != null && E.IsReady()  ) //pop e    _eGameObject.BoundingRadius
-              {
-                E.Cast();
-              }
       
         if(MainMenu["Clear"]["EMinMana"].GetValue<MenuSlider>().Value < ObjectManager.Player.ManaPercent )
         {
@@ -215,16 +205,16 @@
        }
       }//koniec EMinion
 
-     if(MainMenu["Clear"]["QMinion"].GetValue < MenuBool > ().Enabled)
-     {
-       if(MainMenu["Clear"]["EMinMana"].GetValue<MenuSlider>().Value < ObjectManager.Player.ManaPercent )
-       {
-         var minions = GameObjects.EnemyMinions.Where(x => x.IsValidTarget(E.Range) && x.IsMinion()).Cast<AIBaseClient>().ToList();
-         var QFarmLocation = Q.GetLineFarmLocation(minions);
-         Q.Cast(QFarmLocation.Position);
-       }
-
-     }
+   //  if(MainMenu["Clear"]["QMinion"].GetValue < MenuBool > ().Enabled)
+   //  {
+   //    if(MainMenu["Clear"]["EMinMana"].GetValue<MenuSlider>().Value < ObjectManager.Player.ManaPercent )
+   //    {
+   //      var minions = GameObjects.EnemyMinions.Where(x => x.IsValidTarget(E.Range) && x.IsMinion()).Cast<AIBaseClient>().ToList();
+   //      var QFarmLocation = Q.GetLineFarmLocation(minions);
+   //      Q.Cast(QFarmLocation.Position);
+   //    }
+   //
+   //  }
 
       if(MainMenu["Clear"]["RMinion"].GetValue < MenuBool > ().Enabled)
       {
@@ -249,11 +239,6 @@
       {
         var mobs = GameObjects.Jungle.Where(x => x.IsValidTarget(E.Range) && x.IsJungle()).Cast<AIBaseClient>().ToList();
 
-        if (_eGameObject != null && E.IsReady()  ) //pop e    _eGameObject.BoundingRadius
-              {
-                E.Cast();
-              }
-      
         if(MainMenu["Clear"]["EMinMana"].GetValue<MenuSlider>().Value < ObjectManager.Player.ManaPercent )
         {
           if(mobs.Any())
@@ -266,17 +251,18 @@
           }
        }
       }//koniec E jugnle
-
-     if(MainMenu["Clear"]["QJungle"].GetValue < MenuBool > ().Enabled)
-     {
-       if(MainMenu["Clear"]["EMinMana"].GetValue<MenuSlider>().Value < ObjectManager.Player.ManaPercent )
-       {
-         var mobs = GameObjects.Jungle.Where(x => x.IsValidTarget(E.Range) && x.IsJungle()).Cast<AIBaseClient>().ToList();
-         var QFarmLocation = Q.GetLineFarmLocation(mobs);
-         Q.Cast(QFarmLocation.Position);
-       }
-
-     }
+  
+  //    if(MainMenu["Clear"]["QJungle"].GetValue < MenuBool > ().Enabled)
+  //    {
+  //      var mobs = GameObjects.Jungle.Where(x => x.IsValidTarget(Q.Range) && x.IsJungle()).Cast<AIBaseClient>().ToList();
+  //      if(MainMenu["Clear"]["EMinMana"].GetValue<MenuSlider>().Value < ObjectManager.Player.ManaPercent )
+  //      {
+  //        
+  //        var QFarmLocation = Q.GetLineFarmLocation(mobs);
+  //        Q.Cast(QFarmLocation.Position);
+  //    }
+  //
+  //  }
 
 
     }//koniec clear
@@ -316,10 +302,6 @@
         if (MainMenu["Harass"]["EHarass"].GetValue < MenuBool > ().Enabled && E.IsReady()) {
         
         
-         if (_eGameObject != null && E.IsReady()) //pop e
-             {
-               E.Cast();
-             }
 
         
         
@@ -552,12 +534,12 @@
       clearMenu.Add(new MenuSlider("EMinMana", "Clear if Your Mana% >=", 30,0,100));
       clearMenu.Add(new MenuBool("EMinion", "Use E on minion clear", true));
       clearMenu.Add(new MenuSlider("EMinionCount", "Use E if hits >= minions", 3,0,6));
-      clearMenu.Add(new MenuBool("QMinion", "Use Q on minion clear", false));
+      //clearMenu.Add(new MenuBool("QMinion", "Use Q on minion clear", false));   //apparently Q is bugged like hell
       clearMenu.Add(new MenuBool("RMinion", "Use R on minion clear", false));
       clearMenu.Add(new MenuSlider("RMinionCount", "Use R if hits >= minions", 6,0,12));
       clearMenu.Add(new MenuSlider("Seperator lul", "JUNGLE CLEAR", 0,0,0));
       clearMenu.Add(new MenuBool("EJungle", "Use E on Jungle clear", true));
-      clearMenu.Add(new MenuBool("QJungle", "Use Q on Jungle clear", false));
+      //clearMenu.Add(new MenuBool("QJungle", "Use Q on Jungle clear", false));
       
       
       MainMenu.Add(clearMenu);
