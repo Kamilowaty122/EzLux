@@ -35,7 +35,9 @@
         return;
       }
       Console.WriteLine("You lux mate");
-
+      Console.WriteLine("Damage indicator shamelessly copied from OlympusAIO by figo283");
+      Console.WriteLine("Have fun)))))))))))");
+      
       Q = new Spell(SpellSlot.Q, 1175);
       W = new Spell(SpellSlot.W, 1075);
       E = new Spell(SpellSlot.E, 1100);
@@ -53,6 +55,7 @@
       // events
       Game.OnUpdate += OnUpdate;
       Drawing.OnDraw += OnDraw;
+      Drawing.OnEndScene += DamageIndicator.OnEndScene;
     }
 
         private static bool HasPassive(AIBaseClient target)
@@ -223,6 +226,24 @@
 
      }
 
+      if(MainMenu["Clear"]["RMinion"].GetValue < MenuBool > ().Enabled)
+      {
+        var minions = GameObjects.EnemyMinions.Where(x => x.IsValidTarget(R.Range) && x.IsMinion()).Cast<AIBaseClient>().ToList();
+
+
+        if(MainMenu["Clear"]["EMinMana"].GetValue<MenuSlider>().Value < ObjectManager.Player.ManaPercent )
+        {
+          if(minions.Any())
+          {
+            var RFarmLocation = R.GetLineFarmLocation(minions);
+            if(RFarmLocation.MinionsHit >= MainMenu["Clear"]["RMinionCount"].GetValue<MenuSlider>().Value)
+            {
+              R.Cast(RFarmLocation.Position);
+              return;
+            }
+          }
+       }
+      }//koniec RMinion
 
     if(MainMenu["Clear"]["EJungle"].GetValue < MenuBool > ().Enabled)
       {
@@ -335,9 +356,39 @@
       
 
     }//koniec harass
+
+    private static void LegendarySteal() //very bad and will miss a lot
+    {
+      if(MainMenu["Misc"]["LegendarySteal"].GetValue < MenuBool > ().Enabled)
+      {
+        //var lMobs = GameObjects.Jungle.Where(x =>x.IsValidTarget(R.Range) && x.GetJungleType() == JungleType.Legendary).OrderByDescending(x => x.MaxHealth).FirstOrDefault();
+        if(GameObjects.JungleLegendary.Any(x => x.IsValidTarget(R.Range) ))
+        {
+          //Console.WriteLine("tylko if :((((");
+          foreach(var mob in GameObjects.JungleLegendary.Where(x => x.IsValidTarget(R.Range)))
+          {
+            var hp = mob.Health;
+            var Rdmg =  R.GetDamage(mob);
+            //Console.WriteLine("hp " + hp + " dmg" + Rdmg);
+            if(hp < Rdmg)
+            {
+              var pred = R.GetPrediction(mob);
+              if(pred.Hitchance >= HitChance.High)
+              {
+              R.Cast(pred.CastPosition);
+              }
+            }
+          }
+
+        }
+        
+
+      }//koniec ifa
+    }//koniec steal
+
     private static void OnUpdate(EventArgs args) {
       KillSecure();
-
+      LegendarySteal();
       switch (Orbwalker.ActiveMode) {
       case OrbwalkerMode.Combo:
         Combo();
@@ -412,6 +463,54 @@
             }//koniec foreacha
         }//koniec ks
 
+//======================damage indicator shit
+    public static AIHeroClient myhero { get { return ObjectManager.Player; } }
+    
+    class DamageIndicator
+    {
+        public static void OnEndScene(EventArgs args)
+        {
+            if(!MainMenu["Draw"]["DamageIndicator"].GetValue < MenuBool > ().Enabled){//fix pls
+                return;
+                }
+
+            foreach (var target in GameObjects.EnemyHeroes.Where(x => x.IsValidTarget(2000) && !x.IsDead && x.IsHPBarRendered))
+            {
+                Vector2 pos = Drawing.WorldToScreen(target.Position);
+
+                if (!pos.IsOnScreen())
+                    return;
+
+                float damage = 0; //fix   //check for Q E R     TODO : LUDEN ELECTROCUTE
+
+                if (Q.IsReady() && MainMenu["Misc"]["QIndicator"].GetValue < MenuBool > ().Enabled){damage += Q.GetDamage(target);}
+                if (E.IsReady() && MainMenu["Misc"]["EIndicator"].GetValue < MenuBool > ().Enabled){damage += E.GetDamage(target);}
+                if (R.IsReady() && MainMenu["Misc"]["RIndicator"].GetValue < MenuBool > ().Enabled){damage += R.GetDamage(target);}
+                if (!false) {damage += MainMenu["Misc"]["AAPasiveCount"].GetValue<MenuSlider>().Value * ((float)Damage.GetAutoAttackDamage(myhero, target) + ((((float)myhero.Level*10f)+10f) + ((float)myhero.TotalMagicalDamage*0.2f)));}
+                
+                //if (Items.Ludens_echo.IsOwned() && ){damage += 100 + (myhero.TotalMagicalDamage * 0.1f);} // ludens echo
+                
+                var hpBar = target.HPBarPosition;
+
+                if (damage > target.Health)
+                {
+                    Drawing.DrawText(hpBar.X + 69, hpBar.Y - 45, System.Drawing.Color.White, "KILLABLE");
+                }
+
+                var damagePercentage = ((target.Health - damage) > 0 ? (target.Health - damage) : 0) / target.MaxHealth;
+                var currentHealthPercentage = target.Health / target.MaxHealth;
+
+                var startPoint = new Vector2(hpBar.X - 45 + damagePercentage * 104, hpBar.Y - 18);
+                var endPoint = new Vector2(hpBar.X - 45 + currentHealthPercentage * 104, hpBar.Y - 18);
+
+                Drawing.DrawLine(startPoint, endPoint, 12, System.Drawing.Color.Gold);
+                //Console.WriteLine(damage);
+            }
+        }
+    }
+
+
+//======================damage indicator shit
     private static void SetupMenu() {
       
       // create menu
@@ -432,6 +531,7 @@
       drawMenu.Add(new MenuBool("drawW", "Draw W Range", false));
       drawMenu.Add(new MenuBool("drawE", "Draw E Range", true));
       drawMenu.Add(new MenuBool("drawR", "Draw R Range", true));
+      drawMenu.Add(new MenuBool("DamageIndicator", "Draw Damage", true));
       MainMenu.Add(drawMenu);
 
       //misc menu
@@ -439,6 +539,11 @@
       miscMenu.Add(new MenuBool("QKillsteal", "Kill Secure with Q", true));
       miscMenu.Add(new MenuBool("EKillsteal", "Kill Secure with E", true));
       miscMenu.Add(new MenuBool("RKillsteal", "Kill Secure with R", true));
+      miscMenu.Add(new MenuSlider("AAPasiveCount", "This Many AA with Pasive for damage indicator", 1,0,4));
+      miscMenu.Add(new MenuBool("QIndicator", "Show Q damage for damage indicator", true));
+      miscMenu.Add(new MenuBool("EIndicator", "Show W damage for damage indicator", true));
+      miscMenu.Add(new MenuBool("RIndicator", "Show R damage for damage indicator", true));
+      miscMenu.Add(new MenuBool("LegendarySteal", "Try to steal baron and dragon with ult (very bad and will miss a lot)", false));
       //miscMenu.AddKey("R", "SemiRKey", "Semi-manual R Key", Keys.T, KeyBindType.Press);
       MainMenu.Add(miscMenu);
 
@@ -446,12 +551,11 @@
       var clearMenu = new Menu("Clear", "Clear Settings");
       clearMenu.Add(new MenuSlider("EMinMana", "Clear if Your Mana% >=", 30,0,100));
       clearMenu.Add(new MenuBool("EMinion", "Use E on minion clear", true));
- 
       clearMenu.Add(new MenuSlider("EMinionCount", "Use E if hits >= minions", 3,0,6));
       clearMenu.Add(new MenuBool("QMinion", "Use Q on minion clear", false));
-      
+      clearMenu.Add(new MenuBool("RMinion", "Use R on minion clear", false));
+      clearMenu.Add(new MenuSlider("RMinionCount", "Use R if hits >= minions", 6,0,12));
       clearMenu.Add(new MenuSlider("Seperator lul", "JUNGLE CLEAR", 0,0,0));
-      
       clearMenu.Add(new MenuBool("EJungle", "Use E on Jungle clear", true));
       clearMenu.Add(new MenuBool("QJungle", "Use Q on Jungle clear", false));
       
